@@ -21,7 +21,7 @@ SUSPICIOUS_TOOLS = ["canva", "picsart", "photoshop"]
 
 CHECKS = {
     "College name": r"([A-Za-z.&' ]+?)\s+college of engineering",
-    "Name of the faculty": r"\d{1}:\d{1}:\d{1}",
+     "faculty cadre ratio":r"\d{1}:\d{1}:\d{1}",
     "Date": r"(\d{1,2}[./-]\d{1,2}[./-]\d{2,4})",
 }
 
