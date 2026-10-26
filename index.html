@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DocCheck – Check a PDF in seconds</title>
+  <meta name="description" content="Upload a PDF and DocCheck checks it for required details and signs of editing software.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --ink: #14213d;
+      --muted: #5b667a;
+      --accent: #2f5bff;
+      --gold: #c9a96e;
+      --card: #ffffff;
+      --line: #e3dfd5;
+      --ok: #16794c;
+      --warn: #9a6700;
+      --bad: #b42318;
+      --radius: 16px;
+      --max: 1060px;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: "DM Sans", system-ui, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.6; }
+    h1, h2, h3 { font-family: "Bricolage Grotesque", system-ui, sans-serif; line-height: 1.1; letter-spacing: -0.02em; }
+    a { color: inherit; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+    section { padding: 72px 0; }
+
+    /* Nav */
+    nav .wrap { display: flex; align-items: center; justify-content: space-between; padding-top: 22px; padding-bottom: 22px; }
+    .logo { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 1.4rem; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+    .logo i { width: 14px; height: 14px; border-radius: 50%; background: var(--gold); display: inline-block; }
+    nav ul { list-style: none; display: flex; gap: 28px; padding: 0; }
+    nav ul a { text-decoration: none; color: var(--muted); font-weight: 500; }
+    nav ul a:hover { color: var(--ink); }
+
+    /* Hero */
+    .hero { padding-top: 40px; }
+    .hero .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
+    .hero h1 { font-size: clamp(2.4rem, 5.5vw, 4rem); font-weight: 800; }
+    .hero h1 span { box-shadow: inset 0 -0.28em 0 var(--gold); }
+    .hero p.lead { color: var(--muted); font-size: 1.15rem; margin: 20px 0 0; max-width: 44ch; }
+
+    /* Upload card */
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: 0 24px 50px -28px rgba(20,33,61,.4); }
+    .drop {
+      display: block; border: 2px dashed #c8c2b3; border-radius: 12px; padding: 36px 20px;
+      text-align: center; cursor: pointer; transition: background .15s, border-color .15s;
+    }
+    .drop:hover, .drop.over { background: #f3f6ff; border-color: var(--accent); }
+    .drop strong { display: block; font-size: 1.1rem; }
+    .drop small { color: var(--muted); }
+    .drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .drop:focus-within { outline: 3px solid var(--accent); outline-offset: 3px; }
+    #fileName { margin-top: 10px; font-weight: 500; word-break: break-all; }
+    .btn {
+      width: 100%; margin-top: 16px; padding: 14px 26px; border-radius: 999px; background: var(--accent);
+      color: #fff; font-weight: 500; border: 0; font-size: 1rem; cursor: pointer; font-family: inherit;
+    }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Results */
+    #result { margin-top: 20px; }
+    .verdict { padding: 14px 16px; border-radius: 12px; font-weight: 500; }
+    .verdict.pass { background: #e7f6ee; color: var(--ok); }
+    .verdict.warn { background: #fff4d6; color: var(--warn); }
+    .verdict.fail, .verdict.error { background: #fde8e6; color: var(--bad); }
+    .rows { list-style: none; padding: 0; margin-top: 14px; }
+    .rows li { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .rows li:last-child { border-bottom: 0; }
+    .rows .val { color: var(--muted); text-align: right; word-break: break-word; }
+    .tag { font-weight: 700; }
+    .tag.ok { color: var(--ok); }
+    .tag.no { color: var(--bad); }
+    .meta { margin-top: 14px; color: var(--muted); font-size: .95rem; }
+
+    /* Sections */
+    .section-title { font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 700; margin-bottom: 36px; max-width: 20ch; }
+    .steps { list-style: none; padding: 0; display: grid; gap: 22px; counter-reset: s; max-width: 640px; }
+    .steps li { counter-increment: s; display: flex; gap: 18px; }
+    .steps li::before {
+      content: counter(s); flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--ink);
+      color: #fff; display: grid; place-items: center; font-family: "Bricolage Grotesque", sans-serif; font-weight: 700;
+    }
+    .steps strong { display: block; font-size: 1.1rem; }
+    .steps span { color: var(--muted); }
+    .checks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .check { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; }
+    .check h3 { font-size: 1.25rem; margin-bottom: 8px; }
+    .check p { color: var(--muted); }
+    .note { margin-top: 28px; color: var(--muted); max-width: 62ch; }
+
+    footer { padding: 40px 0; color: var(--muted); font-size: .95rem; border-top: 1px solid var(--line); }
+    footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+
+    @media (max-width: 800px) {
+      .hero .wrap, .checks { grid-template-columns: 1fr; }
+      nav ul { display: none; }
+      section { padding: 52px 0; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .drop { transition: none; } }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="wrap">
+      <a href="#" class="logo"><i></i>DocCheck</a>
+      <ul>
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#checks">What we check</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="wrap">
+      <div>
+        <h1>Check a PDF in <span>seconds</span></h1>
+        <p class="lead">Upload a document and DocCheck looks for the required details and tells you if it was made with design or editing software.</p>
+      </div>
+
+      <div class="panel">
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept="application/pdf,.pdf">
+          <strong>Choose a PDF or drop it here</strong>
+          <small>PDF files up to 10 MB</small>
+          <div id="fileName"></div>
+        </label>
+        <button class="btn" id="go" disabled>Check document</button>
+        <div id="result" aria-live="polite"></div>
+      </div>
+    </div>
+  </header>
+
+  <section id="how">
+    <div class="wrap">
+      <h2 class="section-title">Three steps, one result</h2>
+      <ol class="steps">
+        <li><div><strong>Upload your PDF</strong><span>Choose a file or drag it onto the box.</span></div></li>
+        <li><div><strong>We read the text and file details</strong><span>The file is checked in memory and is not stored.</span></div></li>
+        <li><div><strong>See what passed and what didn't</strong><span>Each check is shown with what was found.</span></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="checks">
+    <div class="wrap">
+      <h2 class="section-title">What DocCheck looks for</h2>
+      <div class="checks">
+        <div class="check"><h3>College name</h3><p>A line that names a college of engineering.</p></div>
+        <div class="check"><h3>Faculty name</h3><p>The text after "Name of the faculty:".</p></div>
+        <div class="check"><h3>Date</h3><p>A date written like 12/10/2026 or 12-10-26.</p></div>
+      </div>
+      <p class="note">DocCheck also reads the file's creator and producer fields. If they show Canva, Picsart, or Photoshop, you get a warning. This gives hints, not proof, so confirm important documents with the issuer.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <span>© 2026 DocCheck</span>
+      <span>Files are read in memory and never saved.</span>
+    </div>
+  </footer>
+
+  <script>
+    var fileInput = document.getElementById("file");
+    var drop = document.getElementById("drop");
+    var go = document.getElementById("go");
+    var nameBox = document.getElementById("fileName");
+    var result = document.getElementById("result");
+
+    function setFile(f) {
+      nameBox.textContent = f ? f.name : "";
+      go.disabled = !f;
+    }
+    fileInput.addEventListener("change", function () { setFile(fileInput.files[0]); });
+
+    ["dragenter", "dragover"].forEach(function (ev) {
+      drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add("over"); });
+    });
+    ["dragleave", "drop"].forEach(function (ev) {
+      drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove("over"); });
+    });
+    drop.addEventListener("drop", function (e) {
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        setFile(fileInput.files[0]);
+      }
+    });
+
+    function el(tag, cls, text) {
+      var n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text !== undefined) n.textContent = text;   // textContent keeps PDF text safe
+      return n;
+    }
+
+    function showError(msg) {
+      result.replaceChildren(el("div", "verdict error", msg));
+    }
+
+    function showResult(d) {
+      var messages = {
+        pass: "All checks passed.",
+        warn: "Required details found, but editing software was detected.",
+        fail: "Some checks failed."
+      };
+      var box = document.createDocumentFragment();
+      box.appendChild(el("div", "verdict " + d.verdict, messages[d.verdict]));
+
+      var list = el("ul", "rows");
+      d.checks.forEach(function (c) {
+        var li = el("li");
+        var left = el("span");
+        left.appendChild(el("span", "tag " + (c.passed ? "ok" : "no"), c.passed ? "Pass  " : "Fail  "));
+        left.appendChild(document.createTextNode(c.label));
+        li.appendChild(left);
+        li.appendChild(el("span", "val", c.found || "not found"));
+        list.appendChild(li);
+      });
+      box.appendChild(list);
+
+      var m = d.metadata, text;
+      if (!m.found) text = "File details: metadata is missing from this PDF.";
+      else {
+        text = "Producer: " + (m.producer || "unknown") + ". Creator: " + (m.creator || "unknown") + ".";
+        if (m.flagged.length) text += " Made with: " + m.flagged.join(", ").toUpperCase() + ".";
+      }
+      box.appendChild(el("p", "meta", text));
+      result.replaceChildren(box);
+    }
+
+    go.addEventListener("click", function () {
+      var f = fileInput.files[0];
+      if (!f) return;
+      var data = new FormData();
+      data.append("pdf", f);
+      go.disabled = true;
+      go.textContent = "Checking...";
+      result.replaceChildren();
+
+      fetch("/api/validate", { method: "POST", body: data })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+        .then(function (res) { res.ok ? showResult(res.body) : showError(res.body.error || "Something went wrong."); })
+        .catch(function () { showError("Could not reach the server. Is the app running?"); })
+        .finally(function () { go.disabled = false; go.textContent = "Check document"; });
+    });
+  </script>
+</body>
+</html>
